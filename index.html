@@ -1,28 +1,69 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2949/2949062.png">
-  <meta name="theme-color" content="#000000">
-
   <meta charset="UTF-8" />
-  <title>Mini Galaga</title>
+  <title>Mini Galaga PWA con controles táctiles</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2949/2949062.png" />
+  <meta name="theme-color" content="#000000" />
   <style>
     body {
       margin: 0;
       overflow: hidden;
       background: black;
+      font-family: Arial, sans-serif;
+      -webkit-touch-callout: none; /* evitar menú contextual en iOS */
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
     canvas {
       display: block;
       margin: 0 auto;
       background: #000;
+      touch-action: none;
+    }
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      z-index: 10;
+      user-select: none;
+    }
+    #controls button {
+      font-size: 2.5rem;
+      width: 60px;
+      height: 60px;
+      margin: 0 15px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      outline: none;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #controls button:active {
+      background: rgba(255, 255, 255, 0.5);
     }
   </style>
 </head>
 <body>
+  <div id="controls">
+    <button id="leftBtn">◀</button>
+    <button id="shootBtn">●</button>
+    <button id="rightBtn">▶</button>
+  </div>
+
   <canvas id="gameCanvas" width="480" height="640"></canvas>
+
   <script>
+    // Juego Galaga básico con controles táctiles
+
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
@@ -68,6 +109,51 @@
     document.addEventListener("keydown", (e) => {
       keys[e.key] = true;
       if (e.key === " ") {
+        disparar();
+      }
+    });
+
+    document.addEventListener("keyup", (e) => {
+      keys[e.key] = false;
+    });
+
+    // Controles táctiles
+    let moveLeft = false;
+    let moveRight = false;
+    let shoot = false;
+
+    const leftBtn = document.getElementById("leftBtn");
+    const rightBtn = document.getElementById("rightBtn");
+    const shootBtn = document.getElementById("shootBtn");
+
+    leftBtn.addEventListener("touchstart", () => moveLeft = true);
+    leftBtn.addEventListener("touchend", () => moveLeft = false);
+    leftBtn.addEventListener("mousedown", () => moveLeft = true);
+    leftBtn.addEventListener("mouseup", () => moveLeft = false);
+    leftBtn.addEventListener("mouseleave", () => moveLeft = false);
+
+    rightBtn.addEventListener("touchstart", () => moveRight = true);
+    rightBtn.addEventListener("touchend", () => moveRight = false);
+    rightBtn.addEventListener("mousedown", () => moveRight = true);
+    rightBtn.addEventListener("mouseup", () => moveRight = false);
+    rightBtn.addEventListener("mouseleave", () => moveRight = false);
+
+    shootBtn.addEventListener("touchstart", () => {
+      shoot = true;
+      disparar();
+    });
+    shootBtn.addEventListener("mousedown", () => {
+      shoot = true;
+      disparar();
+    });
+    shootBtn.addEventListener("touchend", () => shoot = false);
+    shootBtn.addEventListener("mouseup", () => shoot = false);
+    shootBtn.addEventListener("mouseleave", () => shoot = false);
+
+    // Función disparar con retardo para no disparar demasiado rápido
+    let puedeDisparar = true;
+    function disparar() {
+      if (puedeDisparar) {
         bullets.push({
           x: player.x + player.width / 2 - 2,
           y: player.y,
@@ -76,19 +162,20 @@
           color: "red",
           speed: 7,
         });
+        puedeDisparar = false;
+        setTimeout(() => {
+          puedeDisparar = true;
+          if (shoot) disparar(); // dispara de nuevo si mantiene pulsado
+        }, 300);
       }
-    });
-
-    document.addEventListener("keyup", (e) => {
-      keys[e.key] = false;
-    });
+    }
 
     function update() {
-      // Movimiento del jugador
-      if (keys["ArrowLeft"] && player.x > 0) {
+      // Movimiento jugador con teclado y botones táctiles
+      if ((keys["ArrowLeft"] || moveLeft) && player.x > 0) {
         player.x -= player.speed;
       }
-      if (keys["ArrowRight"] && player.x + player.width < canvas.width) {
+      if ((keys["ArrowRight"] || moveRight) && player.x + player.width < canvas.width) {
         player.x += player.speed;
       }
 
@@ -140,7 +227,7 @@
         }
       }
 
-      // Reiniciar si gana
+      // Ganar si no quedan enemigos
       if (enemies.length === 0) {
         alert("¡Ganaste!\nPuntaje: " + score);
         createEnemies();
@@ -179,13 +266,13 @@
     }
 
     gameLoop();
+
+    // Registro de Service Worker para PWA
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(reg => console.log("Service Worker registrado:", reg.scope))
+        .catch(err => console.error("Error al registrar Service Worker:", err));
+    }
   </script>
-  <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js")
-      .then(reg => console.log("Service Worker registrado:", reg.scope))
-      .catch(err => console.error("Error al registrar Service Worker:", err));
-  }
-</script>
 </body>
 </html>
