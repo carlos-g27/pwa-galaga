@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mini Galaga</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: black;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="480" height="640"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const player = {
+      x: canvas.width / 2 - 20,
+      y: canvas.height - 60,
+      width: 40,
+      height: 20,
+      color: "white",
+      speed: 5,
+    };
+
+    const bullets = [];
+    const enemies = [];
+    let score = 0;
+    let keys = {};
+
+    // Crear enemigos en formación
+    function createEnemies() {
+      enemies.length = 0;
+      const rows = 4;
+      const cols = 7;
+      const spacingX = 60;
+      const spacingY = 40;
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          enemies.push({
+            x: col * spacingX + 30,
+            y: row * spacingY + 30,
+            width: 30,
+            height: 20,
+            color: "lime",
+            dx: 1,
+            dy: 0,
+          });
+        }
+      }
+    }
+
+    createEnemies();
+
+    document.addEventListener("keydown", (e) => {
+      keys[e.key] = true;
+      if (e.key === " ") {
+        bullets.push({
+          x: player.x + player.width / 2 - 2,
+          y: player.y,
+          width: 4,
+          height: 10,
+          color: "red",
+          speed: 7,
+        });
+      }
+    });
+
+    document.addEventListener("keyup", (e) => {
+      keys[e.key] = false;
+    });
+
+    function update() {
+      // Movimiento del jugador
+      if (keys["ArrowLeft"] && player.x > 0) {
+        player.x -= player.speed;
+      }
+      if (keys["ArrowRight"] && player.x + player.width < canvas.width) {
+        player.x += player.speed;
+      }
+
+      // Movimiento de balas
+      bullets.forEach((b, i) => {
+        b.y -= b.speed;
+        if (b.y < 0) bullets.splice(i, 1);
+      });
+
+      // Movimiento enemigos
+      let edgeReached = false;
+      for (const enemy of enemies) {
+        enemy.x += enemy.dx;
+        if (enemy.x + enemy.width > canvas.width || enemy.x < 0) {
+          edgeReached = true;
+        }
+      }
+
+      if (edgeReached) {
+        for (const enemy of enemies) {
+          enemy.dx *= -1;
+          enemy.y += 10;
+        }
+      }
+
+      // Colisiones
+      bullets.forEach((b, bi) => {
+        enemies.forEach((e, ei) => {
+          if (
+            b.x < e.x + e.width &&
+            b.x + b.width > e.x &&
+            b.y < e.y + e.height &&
+            b.y + b.height > e.y
+          ) {
+            bullets.splice(bi, 1);
+            enemies.splice(ei, 1);
+            score += 10;
+          }
+        });
+      });
+
+      // Game over si un enemigo llega al jugador
+      for (const e of enemies) {
+        if (e.y + e.height >= player.y) {
+          alert("¡Game Over!\nPuntaje: " + score);
+          score = 0;
+          createEnemies();
+          break;
+        }
+      }
+
+      // Reiniciar si gana
+      if (enemies.length === 0) {
+        alert("¡Ganaste!\nPuntaje: " + score);
+        createEnemies();
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Jugador
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      // Balas
+      for (const b of bullets) {
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, b.y, b.width, b.height);
+      }
+
+      // Enemigos
+      for (const e of enemies) {
+        ctx.fillStyle = e.color;
+        ctx.fillRect(e.x, e.y, e.width, e.height);
+      }
+
+      // Puntaje
+      ctx.fillStyle = "white";
+      ctx.font = "18px Arial";
+      ctx.fillText("Puntaje: " + score, 10, 20);
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>
