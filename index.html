@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2949/2949062.png">
+  <meta name="theme-color" content="#000000">
+
   <meta charset="UTF-8" />
   <title>Mini Galaga</title>
   <style>
@@ -176,5 +180,12 @@
 
     gameLoop();
   </script>
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(reg => console.log("Service Worker registrado:", reg.scope))
+      .catch(err => console.error("Error al registrar Service Worker:", err));
+  }
+</script>
 </body>
 </html>
